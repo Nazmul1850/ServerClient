@@ -11,8 +11,10 @@ public class ServerClass {
 
 
 
+
     public static void main(String[] args) throws IOException, ClassNotFoundException {
          ArrayList<Student> students = new ArrayList<>();
+        Integer MAX_BUFFER_SIZE = 1000;
         ServerSocket welcomeSocket = new ServerSocket(6666);
         while(true){
 //            for(Student x: students) {
@@ -22,7 +24,8 @@ public class ServerClass {
             System.out.println("Waiting for connection");
             Socket socket = welcomeSocket.accept();
             System.out.println("Connection Established");
-            Thread student = new StudentThread(socket,students);
+            System.out.println(MAX_BUFFER_SIZE);
+            Thread student = new StudentThread(socket,students,MAX_BUFFER_SIZE);
             student.start();
         }
     }

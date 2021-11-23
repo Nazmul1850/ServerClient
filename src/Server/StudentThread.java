@@ -13,9 +13,14 @@ public class StudentThread extends Thread{
     Socket socket;
     ArrayList<Student> students;
     private Student currentStudent;
-    public StudentThread(Socket socket,ArrayList<Student> students ) {
+    private Integer fileID = 0;
+    private Integer MAX_Buffer_Size;
+    private final int MAX_Chunk_Size=100;
+    private final int MIN_Chunk_Size=30;
+    public StudentThread(Socket socket, ArrayList<Student> students, Integer max_buffer_size) {
         this.socket = socket;
         this.students = students;
+        MAX_Buffer_Size = max_buffer_size;
     }
     public void run(){
         try {
@@ -78,6 +83,27 @@ public class StudentThread extends Thread{
                             System.out.println(toStudent);
                             out.writeObject(toStudent);
                             break;
+                        case "upload":
+                            out.writeObject("public or private?");
+                            String type = (String)in.readObject();
+                            System.out.println(type);
+                            out.writeObject("Send File Name and Size");
+                            String fileName = (String)in.readObject();
+                            out.writeObject("");
+                            String fileSize = (Long)in.readObject() + "";
+                            System.out.println(fileName + fileSize);
+                            Integer fileSizeint = Integer.parseInt(fileSize);
+                            if(MAX_Buffer_Size - (fileSizeint/1024) >= 30) {
+                                SFile uploadingFile = new SFile(fileName,fileID++,fileSizeint,type);
+                                System.out.println(uploadingFile);
+                                int chunk = (int) ((Math.random() * (MAX_Chunk_Size - MIN_Chunk_Size)) + MIN_Chunk_Size);
+                                out.writeObject(chunk);
+                                System.out.println((String)in.readObject());
+                                out.writeObject((fileID-1));
+                            }else{
+                                out.writeObject("Server is Full. Uploading failed");
+                            }
+                            break;
                         case "exit":
                             currentStudent.setConnection(false);
                             System.out.println(currentStudent.getID() + "--> Logged Out");
@@ -101,6 +127,8 @@ public class StudentThread extends Thread{
         }
 
     }
+
+
 
     private String lookupFile(String id, boolean self) {
         String str = "";
