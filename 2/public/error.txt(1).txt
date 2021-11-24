@@ -1,0 +1,2 @@
+Error at line 26: Total number of arguments mismatch in function func_a
+

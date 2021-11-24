@@ -1,9 +1,6 @@
 package Server;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
@@ -94,7 +91,7 @@ public class StudentThread extends Thread{
                             System.out.println(fileName + fileSize);
                             Integer fileSizeint = Integer.parseInt(fileSize);
                             if(MAX_Buffer_Size - (fileSizeint/1024) >= 30) {
-                                SFile uploadingFile = new SFile(fileName,fileID++,fileSizeint,type);
+                                SFile uploadingFile = new SFile(fileName,fileID++,fileSizeint,type,id);
                                 System.out.println(uploadingFile);
                                 int chunk = (int) ((Math.random() * (MAX_Chunk_Size - MIN_Chunk_Size)) + MIN_Chunk_Size);
                                 out.writeObject(chunk);
@@ -103,15 +100,24 @@ public class StudentThread extends Thread{
                                 int loopNo = (int)in.readObject();
                                 System.out.println(loopNo);
                                 out.writeObject("Send chunks");
-                                byte[] fileBytes = new byte[fileSizeint];
+                                byte[] fileBytes = new byte[fileSizeint + 300];
+                                File newFile = uploadingFile.createFile();
                                 int offset = 0;
                                 int lastChunk = fileSizeint%chunk;
                                 int updateSize = 0;
+                                InputStream fin = socket.getInputStream();
+                                OutputStream fout = new FileOutputStream(newFile);
                                 for(int i=0;i<loopNo;i++){
                                     if(i == loopNo-1) {
-
+                                        updateSize += fin.read(fileBytes,offset,lastChunk);
+                                        fout.write(fileBytes,offset,lastChunk);
+                                        offset += lastChunk;
+                                        out.writeObject("Got the last Chunk");
                                     }else{
-                                        updateSize += in.read(fileBytes,offset,chunk);
+                                        updateSize += fin.read(fileBytes,offset,chunk);
+                                        fout.write(fileBytes,offset,chunk);
+                                        offset += chunk;
+                                        out.writeObject("Got the" + (i+1) + "th Chunk");
                                     }
                                 }
                             }else{
@@ -129,7 +135,20 @@ public class StudentThread extends Thread{
                             }
 
                             break;
+                        case "download":
+                            out.writeObject("Give ID");
+                            String dID = (String)in.readObject();
+                            boolean own = false;
+                            if(dID.equals("own")){
+                                dID = currentStudent.getID();
+                                own = true;
+                            }
+                            out.writeObject("Give FileName");
+                            String dFileName = (String)in.readObject();
+
+                            break;
                         default:
+                            out.writeObject("Command Error");
                             break;
                     }
                 }
