@@ -5,6 +5,7 @@ public class SFile {
     private Integer id;
     private Integer size;
     private String type;
+    private byte[] buffer;
 
     @Override
     public String toString() {
@@ -21,9 +22,17 @@ public class SFile {
         this.id = id;
         this.size = size;
         this.type = type;
+        this.buffer = new byte[size];
     }
 
     public SFile() {
+    }
+
+    public void setBuffer(byte[] buffer){
+        this.buffer = buffer;
+    }
+    public byte[] getBuffer(){
+        return this.buffer;
     }
 
     public String getFileName() {

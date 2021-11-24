@@ -1,10 +1,9 @@
 package Client;
 
+import org.w3c.dom.ls.*;
+
 import javax.swing.*;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.Objects;
 import java.util.Scanner;
@@ -51,6 +50,25 @@ public class Client {
                             out.writeObject("");
                             Integer fileId = (Integer)in.readObject();
                             System.out.println("FileID "+ fileId);
+                            int fileSize = (int)file.length();
+                            int loopNo = (fileSize/chunk);
+                            if(fileSize%chunk > 0){
+                                loopNo++;
+                            }
+                            System.out.println(loopNo);
+                            out.writeObject(loopNo);
+                            System.out.println((String)in.readObject());
+                            byte[] buffer = new byte[fileSize];
+                            int offset = 0;
+                            InputStream fis = new FileInputStream(file);
+                            while (fileSize > 0){
+                                int count = fis.read(buffer,offset,Math.min(chunk,fileSize));
+                                //out.write(buffer,offset,count);
+                                System.out.println(offset + "-->" + fileSize + "-->" + count);
+                                offset += chunk;
+                                fileSize -= chunk;
+                            }
+
                         }catch (ClassCastException e){
                             System.out.println("Uploading Failed due to Server Storage shortage");
                         }

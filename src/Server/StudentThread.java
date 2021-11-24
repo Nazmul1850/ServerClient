@@ -100,6 +100,20 @@ public class StudentThread extends Thread{
                                 out.writeObject(chunk);
                                 System.out.println((String)in.readObject());
                                 out.writeObject((fileID-1));
+                                int loopNo = (int)in.readObject();
+                                System.out.println(loopNo);
+                                out.writeObject("Send chunks");
+                                byte[] fileBytes = new byte[fileSizeint];
+                                int offset = 0;
+                                int lastChunk = fileSizeint%chunk;
+                                int updateSize = 0;
+                                for(int i=0;i<loopNo;i++){
+                                    if(i == loopNo-1) {
+
+                                    }else{
+                                        updateSize += in.read(fileBytes,offset,chunk);
+                                    }
+                                }
                             }else{
                                 out.writeObject("Server is Full. Uploading failed");
                             }
