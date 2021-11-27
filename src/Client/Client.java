@@ -36,11 +36,11 @@ public class Client {
                                 System.out.println("Requested Id Not Found");
                             }else{
                                 clientHandler.write(cmd);
-                                clientHandler.upload();
+                                clientHandler.upload(true);
                             }
                         }else if(choice.equals("2")) {
                             clientHandler.write(cmd);
-                            clientHandler.upload();
+                            clientHandler.upload(false);
                         }else{
                             System.out.println("Wrong Command");
                         }
@@ -48,7 +48,8 @@ public class Client {
                         clientHandler.write(cmd);
                         String replyFromServer = clientHandler.read();
                         System.out.println(replyFromServer);
-                        if(replyFromServer.equals("LO")) {
+                        System.out.println("Please Connect Again!");
+                        if(replyFromServer.equals("You Are Logged Out")) {
                             clientHandler.setConnection(false);
                             clientHandler.handleId();
                         }

@@ -12,12 +12,11 @@ public class StudentThread extends Thread{
     ArrayList<Student> students;
     private Student currentStudent;
     private Integer fileID = 0;
-    private Integer MAX_Buffer_Size;
+    private final Integer MAX_Buffer_Size;
     private Integer currentBuffer;
     private boolean fileRequested;
     private Integer currentRequestID;
-    private final int MAX_Chunk_Size=1024;
-    private final int MIN_Chunk_Size=64;
+
     public StudentThread(Socket socket, ArrayList<Student> students, Integer max_buffer_size,Integer currentBuffer) {
         this.socket = socket;
         this.students = students;
@@ -32,7 +31,7 @@ public class StudentThread extends Thread{
             ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
             String id = (String)in.readObject();
 
-            System.out.println("-->"+socket.getPort() + id);
+            System.out.println("Id-->" + id + " Port-->" + socket.getPort());
             boolean preConnected = false;
             for(Student x: students) {
                 if(Objects.equals(x.getID(), id)) {
@@ -62,12 +61,22 @@ public class StudentThread extends Thread{
                     String cmd = "";
                     if(socket.isConnected()){
                         try {
-                            cmd = (String) in.readObject();
+                            try {
+                                cmd = (String) in.readObject();
+                            }catch (EOFException e) {
+                                System.out.println("Unexpectedly disconnected");
+                                currentStudent.setConnection(false);
+                                break;
+                            }
                         }catch (SocketException e) {
                             System.out.println("Socket disconnected");
+                            currentStudent.setConnection(false);
+                            break;
                         }
                     }
                     System.out.println(cmd);
+                    int MAX_Chunk_Size = 2*1024;
+                    int MIN_Chunk_Size = 100;
                     switch (cmd){
                         case "lookup user":
                             String toStudent = lookupUser();
@@ -126,7 +135,7 @@ public class StudentThread extends Thread{
                                 System.out.println((String)in.readObject());
                                 out.writeObject((fileID-1));
                                 int loopNo = (int)in.readObject();
-                                System.out.println(loopNo);
+                                //System.out.println(loopNo);
                                 out.writeObject("Send chunks");
                                 byte[] fileBytes = new byte[fileSizeint + 300];
                                 File newFile = uploadingFile.createFile();
@@ -136,39 +145,46 @@ public class StudentThread extends Thread{
                                 InputStream fin = socket.getInputStream();
                                 OutputStream fout = new FileOutputStream(newFile);
                                 boolean gotIt = false;
-                                for(int i=0;i<loopNo;i++){
-                                    if(i == loopNo-1) {
-                                        updateSize += fin.read(fileBytes,offset,lastChunk);
-                                        fout.write(fileBytes,offset,lastChunk);
-                                        offset += lastChunk;
-                                        out.writeObject("Got the last Chunk");
-                                    }else{
-                                        updateSize += fin.read(fileBytes,offset,chunk);
-                                        fout.write(fileBytes,offset,chunk);
-                                        offset += chunk;
-                                        out.writeObject("Got the" + (i+1) + "th Chunk");
-                                    }
+                                try {
+                                    for (int i = 0; i < loopNo; i++) {
+                                        if (i == loopNo - 1) {
+                                            updateSize += fin.read(fileBytes, offset, lastChunk);
+                                            fout.write(fileBytes, offset, lastChunk);
+                                            offset += lastChunk;
+                                            out.writeObject("Got the last Chunk");
+                                        } else {
+                                            updateSize += fin.read(fileBytes, offset, chunk);
+                                            fout.write(fileBytes, offset, chunk);
+                                            offset += chunk;
+                                            out.writeObject("Got the chunk (" + (i + 1) + ")");
+                                        }
 
-                                }
-                                if(updateSize == fileSizeint) {
-                                    System.out.println(updateSize + "<==>" + fileSizeint);
-                                    gotIt = true;
-                                }
-                                String rTimeOut = (String)in.readObject();
-                                if(rTimeOut.equals("TO")) {
-                                    System.out.println("Timed out Uploading Failed");
+                                    }
+                                    if (updateSize == fileSizeint) {
+                                        System.out.println(updateSize + "<==>" + fileSizeint);
+                                        gotIt = true;
+                                    }
+                                    String rTimeOut = (String) in.readObject();
+                                    if(rTimeOut.equals("TO")) {
+                                        System.out.println("Timed out Uploading Failed");
+                                        uploadingFile.deleteFile();
+                                        gotIt = false;
+                                    }else{
+                                        System.out.println(rTimeOut);
+                                    }
+                                }catch (SocketException | EOFException e) {
+                                    System.out.println("Socket Disconnected File Sharing is not complete");
                                     uploadingFile.deleteFile();
-                                    gotIt = false;
-                                }else{
-                                    System.out.println(rTimeOut);
+                                    break;
                                 }
+
                                 if(gotIt){
                                     if(fileRequested && currentRequestID != 0){
                                         uploadingFile.setRequestID(currentRequestID);
                                     }
-                                    System.out.println(uploadingFile);
+                                    //System.out.println(uploadingFile);
                                     currentBuffer += fileSizeint;
-                                    System.out.println(updateSize + "--Length-->" + fileSizeint);
+                                    //System.out.println(updateSize + "--Length-->" + fileSizeint);
                                     if(uploadingFile.getType().equals("public")) {
                                         currentStudent.addPublicFile(uploadingFile);
                                     }
@@ -206,7 +222,7 @@ public class StudentThread extends Thread{
                         case "exit":
                             currentStudent.setConnection(false);
                             System.out.println(currentStudent.getID() + "--> Logged Out");
-                            out.writeObject("LO");
+                            out.writeObject("You Are Logged Out");
                             try{
                                 socket.close();
                             }catch (SocketException e) {
@@ -267,14 +283,13 @@ public class StudentThread extends Thread{
                                 System.out.println(loopNo + "--" + dSize);
                                 for (int i = 0; i < loopNo; i++) {
                                     int count;
-                                    System.out.println("Sending " + i);
                                     if (i == loopNo - 1) {
                                         count = fis.read(buffer, offset, dSize % MAX_Chunk_Size);
                                     } else {
                                         count = fis.read(buffer, offset, MAX_Chunk_Size);
                                     }
                                     fout.write(buffer, offset, count);
-                                    System.out.println(offset + "-->" + (dSize-offset) + "-->" + count);
+                                    System.out.println("Sending (" + offset +") to ("+(offset+count) + ")");
                                     offset += MAX_Chunk_Size;
                                 }
                                 System.out.println("finishing Download");
@@ -300,9 +315,9 @@ public class StudentThread extends Thread{
                             for(RequestText r:allReq){
                                 if(!r.isSeen()) {
                                     if(r.getRequestId() == 0) {
-                                        allMsg += r.getMessage() + "\n";
+                                        allMsg += "\"" + r.getMessage() + "\"\n";
                                     }else{
-                                        allMsg += r.getMessage() + "##" + r.getRequestId() + "\n";
+                                        allMsg += "\"" + r.getMessage() + "\"(Request ID) => " + r.getRequestId() + "\n";
                                     }
                                     r.setSeen(true);
 
@@ -311,7 +326,14 @@ public class StudentThread extends Thread{
                             out.writeObject(allMsg);
                             break;
                         default:
-                            out.writeObject("Command Error");
+                            try{
+                                out.writeObject("Command Error");
+                            }catch (SocketException e) {
+                                System.out.println("Socket Disconnected -");
+                                currentStudent.setConnection(false);
+                                break;
+                            }
+
                             break;
                     }
                 }
@@ -357,9 +379,11 @@ public class StudentThread extends Thread{
     private String lookupUser() {
         String str = "";
         for(Student x:students) {
-            str += x.getID();
-            if(x.isConnected()) str += "--> Online\n";
-            else str += "--> Offline\n";
+            if(!x.getID().equals(currentStudent.getID())) {
+                str += x.getID();
+                if(x.isConnected()) str += "--> Online\n";
+                else str += "--> Offline\n";
+            }
         }
         return str;
 

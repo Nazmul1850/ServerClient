@@ -35,7 +35,6 @@ public class SFile {
     public SFile() {
     }
     public File createFile(){
-        System.out.println(studentId+File.separator+type+ File.separator+fileName);
         file = new File(studentId+File.separator+type+ File.separator+fileName);
         return file;
     }

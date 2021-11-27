@@ -53,11 +53,17 @@ public class ClientHandler {
         return connection;
     }
 
-    public void upload() throws IOException, ClassNotFoundException {
+    public void upload(boolean request) throws IOException, ClassNotFoundException {
         File file;
-        System.out.println((String) in.readObject());
-        String choice = sc.nextLine();
-        out.writeObject(choice);
+        String reply = read();
+        if(request){
+            System.out.println("Must be a Public File");
+            write("public");
+        }else{
+            System.out.println(reply);
+            String choice = sc.nextLine();
+            write(choice);
+        }
         JFileChooser jFileChooser = new JFileChooser();
         jFileChooser.setDialogTitle("Choose a file to upload");
         if (jFileChooser.showOpenDialog(null) == jFileChooser.APPROVE_OPTION) {
@@ -90,11 +96,11 @@ public class ClientHandler {
                 for (int i = 0; i < loopNo; i++) {
                     int count = fis.read(buffer, offset, Math.min(chunk, fileSize));
                     fout.write(buffer, offset, count);
-                    System.out.println(offset + "-->" + fileSize + "-->" + count);
+                    System.out.println("Sending ("+offset+") to (" + (offset+count) +")");
                     offset += chunk;
                     fileSize -= chunk;
                     try {
-                        socket.setSoTimeout(3000);
+                        socket.setSoTimeout(10000);
                         System.out.println((String) in.readObject());
                     }catch (SocketTimeoutException e) {
                         timeOut = true;
@@ -103,6 +109,8 @@ public class ClientHandler {
                 }
                 if(timeOut){
                     write("TO");
+                    System.out.println("Timed out");
+                    socket.setSoTimeout(0);
                 }else{
                     write("Done");
                 }
@@ -134,8 +142,8 @@ public class ClientHandler {
         int loopNo = (int) in.readObject();
         write("");
         int chunk = (int)in.readObject();
-        System.out.println(loopNo);
-        byte[] fileBytes = new byte[dSize + 300];
+        System.out.println(chunk);
+        byte[] fileBytes = new byte[dSize];
         String dirPath = "src"+File.separator+"Client"+File.separator+"files";
         File dir = new File(dirPath);
         if(!dir.exists()){
@@ -150,13 +158,17 @@ public class ClientHandler {
         boolean gotIt = false;
         System.out.printf(loopNo + "--" + dSize);
         for (int i = 0; i < loopNo; i++) {
-            System.out.println("Receiving " + i);
             if(i==loopNo-1) {
                 updateSize += fin.read(fileBytes, offset, lastChunk);
+                System.out.println("Recieved (" + offset +") to (" + (offset+lastChunk) + ")");
+                fout.write(fileBytes, offset, lastChunk);
             }else {
                 updateSize += fin.read(fileBytes, offset, chunk);
+                System.out.println("Recieved (" + offset +") to (" + (offset+chunk) + ")");
+                fout.write(fileBytes, offset, chunk);
             }
-            fout.write(fileBytes, offset, Math.min(lastChunk,chunk));
+
+
             offset += chunk;
             }
         if(updateSize == dSize) {
