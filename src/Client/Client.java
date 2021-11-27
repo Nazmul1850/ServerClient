@@ -22,24 +22,59 @@ public class Client {
                 System.out.println("Enter Your Command");
                 Scanner sc = new Scanner(System.in);
                 String cmd = sc.nextLine();
-                if(cmd.equals("upload")) {
-                    clientHandler.write(cmd);
-                    clientHandler.upload();
-                }else if (cmd.equals("exit")){
-                    clientHandler.write(cmd);
-                    String replyFromServer = clientHandler.read();
-                    System.out.println(replyFromServer);
-                    if(replyFromServer.equals("LO")) {
-                        break;
+                if(clientHandler.getConnection()){
+                    if(cmd.equals("upload")) {
+                        System.out.println("1.for Request \n 2.only Upload?");
+                        String choice = sc.nextLine();
+                        if(choice.equals("1")){
+                            clientHandler.write("UR");
+                            System.out.println(clientHandler.read());
+                            String requestID = sc.nextLine();
+                            clientHandler.write(requestID);
+                            String valid = clientHandler.read();
+                            if(valid.equals("Invalid ID")){
+                                System.out.println("Requested Id Not Found");
+                            }else{
+                                clientHandler.write(cmd);
+                                clientHandler.upload();
+                            }
+                        }else if(choice.equals("2")) {
+                            clientHandler.write(cmd);
+                            clientHandler.upload();
+                        }else{
+                            System.out.println("Wrong Command");
+                        }
+                    }else if (cmd.equals("exit")){
+                        clientHandler.write(cmd);
+                        String replyFromServer = clientHandler.read();
+                        System.out.println(replyFromServer);
+                        if(replyFromServer.equals("LO")) {
+                            clientHandler.setConnection(false);
+                            clientHandler.handleId();
+                        }
+                    }else if (cmd.equals("download")){
+                        clientHandler.write(cmd);
+                        clientHandler.download();
+                    }else if (cmd.equals("request")){
+                        clientHandler.write(cmd);
+                        clientHandler.request();
+                    }else if(cmd.equals("show")){
+                        clientHandler.write(cmd);
+                        clientHandler.show();
+                    }else if(cmd.equals("look for")){
+                        clientHandler.write(cmd);
+                        System.out.println(clientHandler.read());
+                        String studentID = sc.nextLine();
+                        clientHandler.write(studentID);
+                        System.out.println(clientHandler.read());
                     }
-                }else if (cmd.equals("download")){
-                    clientHandler.write(cmd);
-                    clientHandler.download();
-                }
-                else{
-                    clientHandler.write(cmd);
-                    String replyFromServer = clientHandler.read();
-                    System.out.println(replyFromServer);
+                    else{
+                        clientHandler.write(cmd);
+                        String replyFromServer = clientHandler.read();
+                        System.out.println(replyFromServer);
+                    }
+                }else{
+                    System.out.println("You Are Not Connected Right now");
                 }
             }
         }

@@ -7,6 +7,7 @@ public class SFile {
     private String fileName;
     private Integer id;
     private String studentId;
+    private Integer requestID;
     private Integer size;
     private String type;
     private File file;
@@ -17,7 +18,8 @@ public class SFile {
                 "fileName='" + fileName + '\'' +
                 ", id=" + id +
                 ", size=" + size +
-                ", type='" + type + '\'' +
+                ", type='" + type +
+                ", requestID" + requestID + '\n'+
                 '}';
     }
 
@@ -27,13 +29,30 @@ public class SFile {
         this.size = size;
         this.type = type;
         this.studentId = SID;
+        this.requestID = 0;
     }
 
     public SFile() {
     }
     public File createFile(){
-        System.out.println(studentId+File.separator+type+ File.separator+fileName+"("+id+")");
-        file = new File(studentId+File.separator+type+ File.separator+fileName+"("+id+")");
+        System.out.println(studentId+File.separator+type+ File.separator+fileName);
+        file = new File(studentId+File.separator+type+ File.separator+fileName);
+        return file;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public Integer getRequestID() {
+        return requestID;
+    }
+
+    public void setRequestID(Integer requestID) {
+        this.requestID = requestID;
+    }
+
+    public File getFile(){
         return file;
     }
 
@@ -59,5 +78,13 @@ public class SFile {
 
     public void setSize(Integer size) {
         this.size = size;
+    }
+
+    public void deleteFile() {
+        if(file.delete()){
+            System.out.println("Deleted File");
+        }else{
+            System.out.println("Cant delete the File");
+        }
     }
 }
